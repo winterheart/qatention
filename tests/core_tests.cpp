@@ -480,26 +480,61 @@ private slots:
 
     void jnlp()
     {
-        const auto xml = QByteArray(
-            "<jnlp><application-desc><argument>example.test</"
-            "argument><argument>u&amp;x</argument><argument>p</"
-            "argument><argument>host</argument><argument>63630</"
-            "argument><argument>623</argument><argument>1</"
-            "argument><argument>1</argument><argument>1</"
-            "argument><argument>5900</argument></application-desc></jnlp>");
-        auto l = parseJnlp(xml);
-        QCOMPARE(l.port, 5900);
-        QVERIFY(l.tls);
-        QCOMPARE(l.user, QString("u&x"));
-        auto plain = xml;
-        plain.replace(
-            "<argument>1</argument><argument>5900",
-            "<argument>0</argument><argument>5900");
-        l = parseJnlp(plain);
-        QCOMPARE(l.port, 63630);
-        QVERIFY(!l.tls);
-        QVERIFY_EXCEPTION_THROWN(parseJnlp("<html>login failed</html>"), Error);
-        QVERIFY_EXCEPTION_THROWN(parseJnlp("<!DOCTYPE jnlp><jnlp/>"), Error);
+        const QList<QByteArray> xmls = {
+            // < 1.69.38
+            QByteArray(
+                "<jnlp><application-desc>"
+                "<resources>"
+                "<jar href=\"iKVM__V1.69.30.0x0.jar\" />"
+                "</resources>"
+                "<argument>example.test</argument>"
+                "<argument>u&amp;x</argument>"
+                "<argument>p</argument>"
+                "<argument>host</argument>"
+                "<argument>63630</argument>"
+                "<argument>623</argument>"
+                "<argument>1</argument>"
+                "<argument>1</argument>"
+                "<argument>1</argument>"
+                "<argument>5900</argument>"
+                "</application-desc></jnlp>"
+            ),
+            // >=1.69.38, < 1.69.40
+            QByteArray(
+                "<jnlp><application-desc>"
+                "<resources>"
+                "<jar href=\"iKVM__V1.69.38.0x0.jar\" />"
+                "</resources>"
+                "<argument>example.test</argument>"
+                "<argument>u&amp;x</argument>"
+                "<argument>p</argument>"
+                "<argument>host</argument>"
+                "<argument>63630</argument>"
+                "<argument>63631</argument>"
+                "<argument>0</argument>"
+                "<argument>0</argument>"
+                "<argument>1</argument>"
+                "<argument>5900</argument>"
+                "<argument>623</argument>"
+                "</application-desc></jnlp>"
+            ),
+        };
+
+        for (auto const &xml : xmls) {
+            auto l = parseJnlp(xml);
+            QCOMPARE(l.port, 5900);
+            QVERIFY(l.tls);
+            QCOMPARE(l.user, QString("u&x"));
+            auto plain = xml;
+            plain.replace(
+                "<argument>1</argument><argument>5900",
+                "<argument>0</argument><argument>5900");
+            l = parseJnlp(plain);
+            QCOMPARE(l.port, 63630);
+            QVERIFY(!l.tls);
+            QVERIFY_EXCEPTION_THROWN(parseJnlp("<html>login failed</html>"), Error);
+            QVERIFY_EXCEPTION_THROWN(parseJnlp("<!DOCTYPE jnlp><jnlp/>"), Error);
+        }
     }
 
     void hermonFramesAndClipping()
